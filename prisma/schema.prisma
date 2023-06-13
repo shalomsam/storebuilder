@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  employees   Employee[]
+  sellers     SellerEntity[]
+  webstoreUrl String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Employee {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  fname          String
+  lname          String
+  email          String       @unique
+  passwordHash   String
+  authToken      String
+  Role           Role         @relation(fields: [roleId], references: [id])
+  roleId         String       @db.ObjectId
+  Organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  isAdmin   Boolean
+  employees Employee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SellerEntity {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+
+  name           String
+  subdomain      String
+  sellerType     SellerType @default(MarketPlace)
+  locations      Address[]
+  addressId      String     @db.ObjectId
+  isOnline       Boolean
+  enableWebStore Boolean
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SellerType {
+  MarketPlace
+  OrgWebOnly
+  Store
+  Vendor
+}
+
+model Address {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  unit    String
+  street  String
+  city    String
+  state   String
+  country String
+
+  SellerEntity   SellerEntity @relation(fields: [sellerEntityId], references: [id])
+  sellerEntityId String       @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  SellerEntity   SellerEntity @relation(fields: [sellerEntityId], references: [id])
+  sellerEntityId String       @db.ObjectId
+
+  sku            String           @unique
+  upc            String?
+  title          String
+  description    String
+  brandName      String
+  modelName      String
+  productDetails ProductDetails[]
+  price          Float
+  reviews        Review[]
+  stock          Int
+  category       String
+  thumbnail      String
+  mediaLinks     String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Meta information about the product ex: weight, height, width, etc.
+model ProductDetails {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  Product   Product? @relation(fields: [productId], references: [id])
+  productId String   @db.ObjectId
+
+  groupingName String
+  label        String
+  detail       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  Product   Product? @relation(fields: [productId], references: [id])
+  productId String?  @db.ObjectId
+
+  // Ratings are out of a total of 5 (stars/points)
+  rating      Float
+  title       String
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
