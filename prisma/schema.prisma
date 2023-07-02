@@ -11,34 +11,40 @@ datasource db {
 }
 
 model Organization {
-  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   name        String
   employees   Employee[]
-  sellers     SellerEntity[]
+  sellers     Seller[]
+  customers   Customer[]
   webstoreUrl String
+  contactInfo ContactInfo
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Employee {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  fname          String
-  lname          String
-  email          String       @unique
-  passwordHash   String
-  authToken      String
-  Role           Role         @relation(fields: [roleId], references: [id])
-  roleId         String       @db.ObjectId
-  Organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String       @db.ObjectId
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String        @db.ObjectId
+  role           Role?         @relation(fields: [roleId], references: [id])
+  roleId         String        @db.ObjectId
+
+  fname        String
+  lname        String
+  email        String      @unique
+  passwordHash String
+  authToken    String
+  phoneNumber  PhoneNumber
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Role {
-  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   name      String
   isAdmin   Boolean
   employees Employee[]
@@ -47,93 +53,252 @@ model Role {
   updatedAt DateTime @updatedAt
 }
 
-model SellerEntity {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String       @db.ObjectId
+model Seller {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String        @db.ObjectId
 
-  name           String
-  subdomain      String
-  sellerType     SellerType @default(MarketPlace)
-  locations      Address[]
-  addressId      String     @db.ObjectId
-  isOnline       Boolean
-  enableWebStore Boolean
-
-  products Product[]
+  name            String
+  subdomain       String
+  sellerType      SellerType    @default(MarketPlace)
+  isOnline        Boolean
+  enableWebStore  Boolean
+  productVariants Variant[]
+  orders          Order[]
+  transactions    Transaction[]
+  contactInfo     ContactInfo
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+type ContactInfo {
+  email         String?
+  phone         PhoneNumber?
+  chatLink      String? // Link to 3rd party chat application
+  mailAddresses Address[]
 }
 
 enum SellerType {
-  MarketPlace
-  OrgWebOnly
-  Store
-  Vendor
+  MarketPlace // Third-party private sellers
+  Organization // Owning Organization
+  Store // Subset store(s) of the organization
+  Vendor // Authorized third-party vendors
 }
 
-model Address {
-  id      String @id @default(auto()) @map("_id") @db.ObjectId
-  unit    String
-  street  String
-  city    String
-  state   String
-  country String
+type Address {
+  unit       String
+  street     String
+  city       String
+  state      String
+  country    String
+  postalCode String
+}
 
-  SellerEntity   SellerEntity @relation(fields: [sellerEntityId], references: [id])
-  sellerEntityId String       @db.ObjectId
+type PhoneNumber {
+  countryCode String
+  phoneNumber String
+}
+
+model Customer {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String        @db.ObjectId
+
+  fname        String
+  lname        String
+  email        String
+  passwordHash String
+  authToken    String
+
+  phoneNumber    PhoneNumber
+  addresses      Address[]
+  orders         Order[]
+  paymentMethods PaymentMethod[]
+  reviews        Review[]
+  transactions   Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([email, phoneNumber])
+}
+
+type Attribute {
+  name  String
+  value String
+  group String
+}
+
+type Media {
+  type   String @default("image/jpeg")
+  src    String
+  width  String
+  height String
 }
 
 model Product {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  SellerEntity   SellerEntity @relation(fields: [sellerEntityId], references: [id])
-  sellerEntityId String       @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  sku            String           @unique
-  upc            String?
-  title          String
-  description    String
-  brandName      String
-  modelName      String
-  productDetails ProductDetails[]
-  price          Float
-  reviews        Review[]
-  stock          Int
-  category       String
-  thumbnail      String
-  mediaLinks     String[]
+  sku         String  @unique
+  upc         String?
+  title       String
+  description String
+  brandName   String
+  modelName   String
+
+  reviews    Review[]
+  category   String
+  thumbnail  Media
+  mediaLinks Media[]
+  variant    Variant[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Meta information about the product ex: weight, height, width, etc.
-model ProductDetails {
+model Variant {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  Product   Product? @relation(fields: [productId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
   productId String   @db.ObjectId
+  seller    Seller   @relation(fields: [sellerId], references: [id])
+  sellerId  String   @db.ObjectId
 
-  groupingName String
-  label        String
-  detail       String
+  condition  ProductCondition
+  attributes Attribute[] // Meta information about the product ex: weight, height, width, etc.
+  price      Float
+  stock      BigInt
+  Discount   Discount[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([productId, attributes])
+}
+
+enum ProductCondition {
+  New
+  Used
+  Refurbished
 }
 
 model Review {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  Product   Product? @relation(fields: [productId], references: [id])
-  productId String?  @db.ObjectId
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  product    Product?  @relation(fields: [productId], references: [id])
+  productId  String    @db.ObjectId
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String    @db.ObjectId
 
   // Ratings are out of a total of 5 (stars/points)
   rating      Float
   title       String
   description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+type PriceAggregator {
+  title       String
+  description String
+  value       Float
+}
+
+model Order {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String    @db.ObjectId
+  seller     Seller?   @relation(fields: [sellerId], references: [id])
+  sellerId   String    @db.ObjectId
+
+  status          OrderStatus       @default(Submitted)
+  cartItems       CartItem[]
+  cartTotal       Float
+  discount        PriceAggregator
+  tax             PriceAggregator[] // includes various tax(PST/GST/etc)
+  grandTotal      Float
+  transactions    Transaction[]
+  shippingAddress Address
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tax.title, discount.title])
+}
+
+model Discount {
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+  productVariantId String  @db.ObjectId
+  productVariant   Variant @relation(fields: [productVariantId], references: [id])
+
+  title       String
+  Description String
+  amount      Float?
+  percentage  Int?
+  startDate   DateTime
+  endDate     DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  order   Order? @relation(fields: [orderId], references: [id])
+  orderId String @db.ObjectId
+
+  sku      String
+  skuPrice Float
+  quantity Int
+  total    Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum OrderStatus {
+  Submitted
+  Processing
+  Shipped
+  Delivered
+}
+
+model PaymentMethod {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String    @db.ObjectId
+
+  cardName     String
+  type         PaymentMethodType
+  cardLastFour Int
+  cardHash     String
+  cardEndDate  String
+  token        String?
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentMethodType {
+  Debit
+  Credit
+  Prepaid
+  Other
+}
+
+model Transaction {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  customerId    String         @db.ObjectId
+  order         Order?         @relation(fields: [orderId], references: [id])
+  orderId       String         @db.ObjectId
+  paymentMethod PaymentMethod? @relation(fields: [paymentId], references: [id])
+  paymentId     String         @db.ObjectId
+  seller        Seller?        @relation(fields: [sellerId], references: [id])
+  sellerId      String         @db.ObjectId
+
+  amount Float
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

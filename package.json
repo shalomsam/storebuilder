@@ -2,6 +2,10 @@
 	"name": "storebuilder",
 	"version": "0.0.1",
 	"private": true,
+	"engines": {
+		"node": ">=18.16.0",
+		"npm": ">=9.5.1"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -25,6 +29,7 @@
 		"prettier": "^2.8.0",
 		"prettier-plugin-prisma": "^4.13.0",
 		"prettier-plugin-svelte": "^2.8.1",
+		"prisma": "^4.15.0",
 		"svelte": "^3.54.0",
 		"svelte-check": "^3.0.1",
 		"tslib": "^2.4.1",
