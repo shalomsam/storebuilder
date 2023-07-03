@@ -27,6 +27,38 @@ async function seed() {
 				webstoreUrl: 'https://dummyorganization.com',
 				contactInfo: {
 					phone: faker.phone.number()
+				},
+				employees: {
+					create: [
+						{
+							fname: 'John',
+							lname: 'Doe',
+							email: 'johndoe@example.com',
+							passwordHash: await bcrypt.hash('password123', 10),
+							authToken: 'authToken123',
+							phoneNumber: '5555555555',
+							role: {
+								create: {
+									name: 'Admin',
+									isAdmin: true
+								}
+							}
+						},
+						{
+							fname: 'Jane',
+							lname: 'Smith',
+							email: 'janesmith@example.com',
+							passwordHash: await bcrypt.hash('password456', 10),
+							authToken: 'authToken456',
+							phoneNumber: '6666666666',
+							role: {
+								create: {
+									name: 'Employee',
+									isAdmin: false
+								}
+							}
+						}
+					]
 				}
 			}
 		});
