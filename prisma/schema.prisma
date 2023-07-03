@@ -33,10 +33,10 @@ model Employee {
 
   fname        String
   lname        String
-  email        String      @unique
+  email        String @unique
   passwordHash String
   authToken    String
-  phoneNumber  PhoneNumber
+  phoneNumber  String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -60,7 +60,7 @@ model Seller {
 
   name            String
   subdomain       String
-  sellerType      SellerType    @default(MarketPlace)
+  sellerType      SellerType    @default(marketPlace)
   isOnline        Boolean
   enableWebStore  Boolean
   productVariants Variant[]
@@ -74,16 +74,16 @@ model Seller {
 
 type ContactInfo {
   email         String?
-  phone         PhoneNumber?
+  phone         String?
   chatLink      String? // Link to 3rd party chat application
   mailAddresses Address[]
 }
 
 enum SellerType {
-  MarketPlace // Third-party private sellers
-  Organization // Owning Organization
-  Store // Subset store(s) of the organization
-  Vendor // Authorized third-party vendors
+  marketPlace // Third-party private sellers
+  organization // Owning Organization
+  store // Subset store(s) of the organization
+  vendor // Authorized third-party vendors
 }
 
 type Address {
@@ -93,11 +93,6 @@ type Address {
   state      String
   country    String
   postalCode String
-}
-
-type PhoneNumber {
-  countryCode String
-  phoneNumber String
 }
 
 model Customer {
@@ -111,7 +106,7 @@ model Customer {
   passwordHash String
   authToken    String
 
-  phoneNumber    PhoneNumber
+  phoneNumber    String
   addresses      Address[]
   orders         Order[]
   paymentMethods PaymentMethod[]
@@ -146,12 +141,12 @@ model Product {
   description String
   brandName   String
   modelName   String
+  category    String
 
   reviews    Review[]
-  category   String
   thumbnail  Media
   mediaLinks Media[]
-  variant    Variant[]
+  variants   Variant[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -161,25 +156,25 @@ model Variant {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   product   Product? @relation(fields: [productId], references: [id])
   productId String   @db.ObjectId
-  seller    Seller   @relation(fields: [sellerId], references: [id])
+  seller    Seller?  @relation(fields: [sellerId], references: [id])
   sellerId  String   @db.ObjectId
 
   condition  ProductCondition
   attributes Attribute[] // Meta information about the product ex: weight, height, width, etc.
   price      Float
   stock      BigInt
-  Discount   Discount[]
+  discounts  Discount[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([productId, attributes])
+  @@unique([productId, attributes.name])
 }
 
 enum ProductCondition {
-  New
-  Used
-  Refurbished
+  new
+  used
+  refurbished
 }
 
 model Review {
@@ -211,7 +206,7 @@ model Order {
   seller     Seller?   @relation(fields: [sellerId], references: [id])
   sellerId   String    @db.ObjectId
 
-  status          OrderStatus       @default(Submitted)
+  status          OrderStatus       @default(submitted)
   cartItems       CartItem[]
   cartTotal       Float
   discount        PriceAggregator
@@ -232,7 +227,7 @@ model Discount {
   productVariant   Variant @relation(fields: [productVariantId], references: [id])
 
   title       String
-  Description String
+  description String
   amount      Float?
   percentage  Int?
   startDate   DateTime
@@ -257,10 +252,10 @@ model CartItem {
 }
 
 enum OrderStatus {
-  Submitted
-  Processing
-  Shipped
-  Delivered
+  submitted
+  srocessing
+  shipped
+  delivered
 }
 
 model PaymentMethod {
@@ -281,10 +276,10 @@ model PaymentMethod {
 }
 
 enum PaymentMethodType {
-  Debit
-  Credit
-  Prepaid
-  Other
+  debit
+  credit
+  prepaid
+  other
 }
 
 model Transaction {
